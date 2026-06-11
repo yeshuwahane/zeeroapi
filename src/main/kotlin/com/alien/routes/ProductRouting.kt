@@ -124,10 +124,6 @@ fun Route.productRouting() {
         }
 
         post("/{id}/approve") {
-            val requesterId = call.request.headers["X-User-Id"]
-            if (requesterId == "adm_02") {
-                return@post call.respond(HttpStatusCode.Forbidden, "Operations Manager does not have permission to approve listings.")
-            }
             val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing product ID.")
             val success = transaction {
                 ProductsTable.update({ ProductsTable.id eq id }) {
@@ -143,10 +139,6 @@ fun Route.productRouting() {
         }
 
         post("/{id}/reject") {
-            val requesterId = call.request.headers["X-User-Id"]
-            if (requesterId == "adm_02") {
-                return@post call.respond(HttpStatusCode.Forbidden, "Operations Manager does not have permission to reject/delete listings.")
-            }
             val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing product ID.")
             val success = transaction {
                 ProductsTable.deleteWhere { ProductsTable.id eq id } > 0
@@ -154,6 +146,32 @@ fun Route.productRouting() {
             if (success) {
                 notifyProductUpdate()
                 call.respond(HttpStatusCode.OK, "Product rejected/deleted.")
+            } else {
+                call.respond(HttpStatusCode.NotFound, "Product not found.")
+            }
+        }
+
+        post("/{id}/update") {
+            val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing product ID.")
+            val request = call.receive<UploadProductRequest>()
+            val endTime = if (request.isAuction) {
+                System.currentTimeMillis() + (request.durationHours.toLong() * 3600L * 1000L)
+            } else {
+                0L
+            }
+            val success = transaction {
+                ProductsTable.update({ ProductsTable.id eq id }) {
+                    it[title] = request.title
+                    it[description] = request.description
+                    it[price] = request.price
+                    it[imageUrl] = request.category
+                    it[isApproved] = false
+                    it[auctionEndTimeMillis] = endTime
+                } > 0
+            }
+            if (success) {
+                notifyProductUpdate()
+                call.respond(HttpStatusCode.OK, "Product updated.")
             } else {
                 call.respond(HttpStatusCode.NotFound, "Product not found.")
             }
