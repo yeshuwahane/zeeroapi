@@ -1,6 +1,14 @@
 # ZeeroStock API Backend
 
-This is the backend API engine powering the ZeeroStock trading terminal. Built as a high-performance **Ktor Server** in Kotlin and connected to a serverless **Neon PostgreSQL** database cluster.
+Zackend API. Built with **Ktor Server** in Kotlin and connected to a serverless **Neon PostgreSQL** database.
+
+---
+
+###  Project Resources & Repositories
+- **Backend API Repository**: [github.com/yeshuwahane/zeeroapi](https://github.com/yeshuwahane/zeeroapi) (This Repository)
+- **Mobile App Repository**: [github.com/yeshuwahane/zeero](https://github.com/yeshuwahane/zeero) 
+
+---
 
 - **Base URL**: `https://zeeroapi-production.up.railway.app`
 - **Hosting**: Hosted on **Railway**
@@ -78,7 +86,7 @@ To prevent upload data loss on container restarts (since Railway hosts have ephe
 
 ---
 
-## 🚀 Running the API Locally
+##  Running the API Locally
 
 ### 1. Database Connection Configuration
 Make sure the PostgreSQL database connection string is properly configured. The connection properties are initialized inside `src/main/kotlin/com/alien/plugins/Database.kt`.
