@@ -4,6 +4,9 @@ import com.alien.models.BidRequest
 import com.alien.models.Product
 import com.alien.models.UploadProductRequest
 import com.alien.plugins.ProductsTable
+import com.alien.plugins.ImagesTable
+import io.ktor.server.response.respondBytes
+import java.util.Base64
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -221,23 +224,41 @@ fun Route.productRouting() {
 
         post("/upload-image") {
             val multipart = call.receiveMultipart()
-            var fileName = ""
+            var imageId = ""
             multipart.forEachPart { part ->
                 if (part is PartData.FileItem) {
                     val fileBytes = part.streamProvider().readBytes()
-                    val uploadDir = File("uploads")
-                    if (!uploadDir.exists()) uploadDir.mkdirs()
-                    val ext = part.originalFileName?.substringAfterLast('.', "png") ?: "png"
-                    fileName = "${UUID.randomUUID()}.$ext"
-                    File(uploadDir, fileName).writeBytes(fileBytes)
+                    val base64Content = Base64.getEncoder().encodeToString(fileBytes)
+                    imageId = UUID.randomUUID().toString()
+                    transaction {
+                        ImagesTable.insert {
+                            it[id] = imageId
+                            it[content] = base64Content
+                        }
+                    }
                 }
                 part.dispose()
             }
-            if (fileName.isNotEmpty()) {
-                call.respond(HttpStatusCode.OK, mapOf("url" to "/uploads/$fileName"))
+            if (imageId.isNotEmpty()) {
+                call.respond(HttpStatusCode.OK, mapOf("url" to "/api/images/$imageId"))
             } else {
                 call.respond(HttpStatusCode.BadRequest, "No image file uploaded.")
             }
+        }
+    }
+
+    get("/api/images/{id}") {
+        val idParam = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Missing image ID.")
+        val content = transaction {
+            ImagesTable.select { ImagesTable.id eq idParam }
+                .map { it[ImagesTable.content] }
+                .firstOrNull()
+        }
+        if (content != null) {
+            val bytes = Base64.getDecoder().decode(content)
+            call.respondBytes(bytes, ContentType.Image.PNG)
+        } else {
+            call.respond(HttpStatusCode.NotFound, "Image not found.")
         }
     }
 }

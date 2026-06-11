@@ -36,6 +36,13 @@ object ProductsTable : Table("products") {
     override val primaryKey = PrimaryKey(id)
 }
 
+object ImagesTable : Table("images") {
+    val id = varchar("id", 50)
+    val content = text("content")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
 fun generatePlaceholderImage(fileName: String, text: String, color1: Color, color2: Color) {
     val dir = File("uploads")
     if (!dir.exists()) dir.mkdirs()
@@ -109,7 +116,7 @@ fun configureDatabase() {
     generatePlaceholderImage("keyboard.png", "Gaming Keyboard", Color(0x11, 0x99, 0x8E), Color(0x38, 0xEF, 0x7D))
 
     transaction(database) {
-        SchemaUtils.create(UsersTable, ProductsTable)
+        SchemaUtils.create(UsersTable, ProductsTable, ImagesTable)
 
         // Seed users
         if (UsersTable.selectAll().count() == 0L) {
@@ -171,7 +178,7 @@ fun configureDatabase() {
             }
         }
 
-        // Migrate product imageUrls if they have the old non-url categories
+        // Migrate product imageUrls if they have the old non-url
         val hasOldImageUrl = ProductsTable.selectAll().any { row ->
             val url = row[ProductsTable.imageUrl]
             url == "electronics" || url == "audio" || url == "fashion"
