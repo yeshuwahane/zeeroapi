@@ -5,7 +5,7 @@ WORKDIR /home/gradle/src
 RUN ./gradlew shadowJar --no-daemon
 
 # Run stage
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre
 EXPOSE 8080
 RUN mkdir /app
 COPY --from=build /home/gradle/src/build/libs/zeero_api-all.jar /app/zeero_api-all.jar
